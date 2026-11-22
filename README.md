@@ -1,3 +1,8 @@
+# JSM changes
+- unlimited choice of patches per page
+- SELECT = choose page
+- larger UI
+
 # ZEN-1 (禅) for the M-VAVE FM-1
 
 **ZEN-1** is ambient custom firmware for the M-VAVE FM-1. It turns the little synth into a living window: a

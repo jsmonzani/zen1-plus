@@ -1391,7 +1391,8 @@ static void amb_input(void)
         return;
     midi_in();
     if ((e = plat_enc(EN_SELECT)) != 0)            /* (SELECT Activity, ALGORITHM the */
-        amb_turn(1, EN_SELECT, e);                 /* Mood, from any page; the key and scale come with the mood) */
+        //amb_turn(1, EN_SELECT, e);                 /* Mood, from any page; the key and scale come with the mood) */
+        amb_page(plat_ms() < amb.touch_until ? amb.page + (e > 0 ? 1 : -1) : 0); // JSM SELECT = change page
     if ((e = sel_step(EN_ALGO)) != 0)
         amb_turn(0, -1, e);
     /* PRESETS: a click only shows the next scene's
@@ -1533,6 +1534,7 @@ static const felucca_font_t *amb_name_font(const char *n)
 /* whether the UI is drawn over rows [sy, sy + sh) now (render8.c r8_blit: such a strip is converted whole) */
 static int amb_over(int32_t sy, int32_t sh)
 {
+    return 1; // JSM
 #if ZN_HUD
     if ((hud.show && amb_hits(sy, sh, 0, 49)) || amb.calib)
         return 1;
@@ -1542,9 +1544,11 @@ static int amb_over(int32_t sy, int32_t sh)
            (plat_ms() < amb.welcome_until && amb_hits(sy, sh, 128, 108)) ||
            (plat_ms() < amb.batt_icon_until && amb_hits(sy, sh, 216, 20));
 }
-
+// JSM This is where the UI is drawn
 static void amb_overlay(int32_t sy, int32_t sh)
 {
+    sy = 0; // full screen please
+    sh = 240;
 #if ZN_HUD
     if (hud.show && amb_hits(sy, sh, 0, 49)) {
         char b[64];
@@ -1556,14 +1560,14 @@ static void amb_overlay(int32_t sy, int32_t sh)
         while (b[k])
             k++;
         b[k++] = ' ';
-        k = hud_num(b, k, "D ", amb.d10 / 10u);    /* draw and blit, ms a frame (x.y) */
+        k = hud_num(b, k, "D ", amb.d10 / 10u);
         b[k - 1] = '.';
         k = hud_num(b, k, "", amb.d10 % 10u);
         k = hud_num(b, k, "B ", amb.b10 / 10u);
         b[k - 1] = '.';
         k = hud_num(b, k, "", amb.b10 % 10u);
-        k = hud_num(b, k, "U ", amb.sent_pct);     /* the share of the screen sent a frame, % */
-        {   /* the save journal's longest page program so far, ms (x.y): it holds the interrupts */
+        k = hud_num(b, k, "U ", amb.sent_pct);
+        {
             uint32_t w = (plat_jr_prog_us_max() + 50u) / 100u;
             k = hud_num(b, k, "W ", w / 10u);
             b[k - 1] = '.';
@@ -1572,7 +1576,7 @@ static void amb_overlay(int32_t sy, int32_t sh)
         hud_num(b, k, proj.style ? "PX" : "PT", 0);
         b[k + 2] = 0;
         cv_text(6, 17, &FONT_XS, b, K_TEXT);
-        {   /* the step, then the scene's parts (SC_PT): where the time goes, ms a frame (x.y) */
+        {
             char tg[3] = {0, ' ', 0};
             int i;
             k = hud_num(b, 0, "s ", amb.s10 / 10u);
@@ -1590,7 +1594,7 @@ static void amb_overlay(int32_t sy, int32_t sh)
     }
 #endif
 #if ZN_HUD
-    if (amb.calib) {                               /* the values under the squares */
+    if (amb.calib) {
         int i;
         for (i = 0; i < 16; i++)
             if (amb_hits(sy, sh, 35 + (i / 4) * 44, 10)) {
@@ -1612,11 +1616,11 @@ static void amb_overlay(int32_t sy, int32_t sh)
         cv_text(x + 8, 45, &FONT_B, ui.msg[1], K_KOTO);
     }
     if (plat_ms() < amb.batt_icon_until && plat_ms() >= amb.status_until && plat_ms() >= amb.touch_until &&
-        amb_hits(sy, sh, 216, 20)) {               /* low (~15 %): a small battery, bottom right, a few seconds */
+        amb_hits(sy, sh, 216, 20)) {
         cv_round(190, 216, 44, 20, 5, K_PANEL);
         amb_batt_icon(196, 218, amb_batt_pct(), K_TEXT);
     }
-    if (plat_ms() < amb.welcome_until && amb_hits(sy, sh, 128, 108)) {   /* the welcome card: the four to start with */
+    if (plat_ms() < amb.welcome_until && amb_hits(sy, sh, 128, 108)) {
         static const char *const W[4][2] = {{"PRESETS", "scene"}, {"ALGORITHM", "mood"}, {"PLAY", "new picture"},
                                             {"FX", "the knobs"}};
         int i;
@@ -1626,7 +1630,7 @@ static void amb_overlay(int32_t sy, int32_t sh)
             cv_text(116 - text_w(&FONT_S, W[i][0]), 158 + 19 * i, &FONT_S, W[i][0], K_TEXT);
             cv_text(126, 158 + 19 * i, &FONT_S, W[i][1], K_KOTO);
         }
-    } else if (plat_ms() < amb.status_until && amb_hits(sy, sh, 160, 76)) {   /* the status card */
+    } else if (plat_ms() < amb.status_until && amb_hits(sy, sh, 160, 76)) { // JSM draw vertically 
         int pct = amb_batt_pct();
         char t[24], n[12], v[12];
         cv_round(4, 178, 232, 58, 6, K_PANEL);
@@ -1640,12 +1644,12 @@ static void amb_overlay(int32_t sy, int32_t sh)
         } else
             copy_str(t, "--", 3);
         cv_text(52, 187, &FONT_B, t, pct >= 0 && pct <= 15 ? K_KOTO : K_TEXT);
-        copy_str(t, "lights ", 8);                 /* (ENV's setting) */
+        copy_str(t, "lights ", 8);
         copy_str(t + 7, AMB_LEDS_NAME[proj.leds], 5);
         for (int c = 7; t[c]; c++)
-            t[c] = (char)(t[c] | 0x20);            /* (in small letters, as the sleep line) */
+            t[c] = (char)(t[c] | 0x20);
         cv_text(14, 209, &FONT_XS, t, K_DIM);
-        if (amb.sleep) {                           /* the sleep timer's time left: h:mm, under an hour m:ss */
+        if (amb.sleep) {
             int32_t ms = (int32_t)(amb.sleep_end - plat_ms());
             uint32_t s = ms > 0 ? (uint32_t)ms / 1000u : 0u, a = s >= 3600u ? s / 3600u : s / 60u,
                      b = s >= 3600u ? s / 60u % 60u : s % 60u;
@@ -1661,7 +1665,7 @@ static void amb_overlay(int32_t sy, int32_t sh)
             cv_text(14, 222, &FONT_XS, t, K_DIM);
         }
 #if ZN_HUD
-        else {   /* (testing builds: the reading itself, to calibrate the scale) */
+        else {
             char r[16];
             int32_t raw = plat_battery_raw();
             copy_str(r, "raw ", 5);
@@ -1673,59 +1677,42 @@ static void amb_overlay(int32_t sy, int32_t sh)
         }
 #endif
         text_c(176, 187, &FONT_B, amb.sc->name, K_TEXT);
-        amb_knob_text(0, n, v);                    /* (the Mood; a dot: the player's tweaks) */
+        amb_knob_text(0, n, v);
         text_c(176, 211, &FONT_B, v, K_KOTO);
         if (amb_tweaked(amb_mood()) && amb.reset_m < 0)
             cv_round(176 + text_w(&FONT_B, v) / 2 + 3, 218, 5, 5, 2, K_KOTO);
     } else if (plat_ms() < amb.touch_until && amb_hits(sy, sh, 160, 76)) {
+        static const char *const PAGE[SC_NPAGE] = {0, "Volume", "Nature", "Music", "Key"};
+        const char *pn = amb.page ? PAGE[amb.page] : amb.sc->name;
+        int32_t hdr_h = FONT_M.h + 8;
+        int32_t body_y = 4 + hdr_h + 2;
+        int32_t body_h = 236 - body_y;
+        int32_t row_h = body_h / 4;
         int i;
-        cv_round(4, 178, 232, 58, 6, K_PANEL);
-        for (i = 0; i < SC_NPAGE; i++) {             /* the pages' tabs over the bar, the one shown lit */
-            static const char *const PAGE[SC_NPAGE] = {0, "Volume", "Nature", "Music", "Key"};
-            const char *pn = i ? PAGE[i] : amb.sc->name;
-            int on = i == amb.page;
-            cv_round(4 + i * 47, 161, 45, 16, 4, on ? K_PANEL : K_BG);
-            text_c(4 + i * 47 + 22, 162, &FONT_XS, pn, on ? K_KOTO : K_DIM);
-        }
+        cv_round(4, 4, 232, 232, 6, K_PANEL);
+        text_c(120, 4 + (hdr_h - FONT_M.h) / 2, &FONT_M, pn, K_KOTO);
         for (i = 0; i < 4; i++) {
             char n[12], v[12];
-            int32_t cx = i * 60 + 30;
+            int32_t ry = body_y + i * row_h;
+            int32_t ty = ry + (row_h - FONT_M.h) / 2;
+            int dot = amb.page == 0 && i == 0 && amb_tweaked(amb_mood()) && amb.reset_m < 0;
+            int32_t vw;
             amb_knob_text(amb_knob_at(amb.page * 4 + i), n, v);
             if (!n[0])
                 continue;
-            {   /* its name, centered, but inside the card */
-                int32_t nw = text_w(amb_name_font(n), n), nx = cx - nw / 2;
-                nx = nx < 7 ? 7 : nx + nw > 233 ? 233 - nw : nx;
-                cv_text(nx, 184, amb_name_font(n), n, i == amb.touched ? K_TEXT : K_DIM);
-            }
-            {   /* the value in the biggest face that fits its 60 px column ("Bubbles" and "Insects" ran
-                 * into each other); words with lower case keep it (the big face has none) */
-                const felucca_font_t *f = &FONT_M;
-                const char *q = v;
-                int lower = 0, dot = amb.page == 0 && i == 0 && amb_tweaked(amb_mood()) && amb.reset_m < 0;
-                int32_t w, x0;
-                for (; *q; q++)
-                    lower |= *q >= 'a' && *q <= 'z';
-                if (lower || text_w(f, v) > 56)
-                    f = &FONT_B;
-                if (text_w(f, v) > 56)
-                    f = &FONT_S;
-                if (text_w(f, v) > 56)
-                    f = &FONT_XS;
-                w = text_w(f, v);
-                x0 = cx - (w + (dot ? 6 : 0)) / 2;         /* centered, with the tweaked mood's dot after it, but */
-                if (x0 < 7)                                /* inside the card ("Quiet Night" and its dot ran off) */
-                    x0 = 7;
-                if (x0 + w > 233)
-                    x0 = 233 - w;
-                cv_text(x0, 216 - f->h / 2, f, v, i == amb.touched ? K_KOTO : K_TEXT);
-                if (dot)                                   /* (the player's tweaks) */
-                    cv_round(x0 + w + 2, 214, 4, 4, 2, i == amb.touched ? K_KOTO : K_TEXT);
+            if (i)
+                cv_rect(8, ry, 224, 1, K_LINE);
+            cv_text(8, ty, &FONT_M, n, i == amb.touched ? K_TEXT : K_DIM);
+            vw = text_w(&FONT_M, v);
+            if (dot) {
+                cv_text(232 - 8 - vw, ty, &FONT_M, v, i == amb.touched ? K_KOTO : K_TEXT);
+                cv_round(232 - 8 - vw - 8, ty + FONT_M.h / 2 - 2, 4, 4, 2, i == amb.touched ? K_KOTO : K_TEXT);
+            } else {
+                cv_text(232 - vw, ty, &FONT_M, v, i == amb.touched ? K_KOTO : K_TEXT);
             }
         }
     }
 }
-
 static void amb_frame(void)
 {
     uint32_t now = plat_ms(), dt = now - amb.last_ms, t0, t1, t2;

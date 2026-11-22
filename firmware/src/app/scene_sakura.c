@@ -21,6 +21,7 @@
  *
  * The world is in 240 x 240 coordinates; the drawing scales by r8_fb.w / 240 for pixel art. Every loop has a
  * fixed bound. */
+#include "dsp/fumi_patches.h" // JSM
 #define SK_MAXP 112
 #define SK_MAXR 16
 #ifndef SK_CROWN
@@ -57,7 +58,7 @@ enum { SKK_MOOD, SKK_ACT, SKK_TONE, SKK_SPACE, SKK_NOTES, SKK_DRONE, SKK_WIND, S
 #define SK_KN 10
 #define SK_NSTREAK 9                        /* light on the river: streaks drifting with the current (fewer) */
 static const int16_t SK_KNOB[SC_NKNOB][4] = {   /* lo, hi, step a detent, default; SPACE is the reverb (P_REVERB) */
-    {0, 4, 1, 0}, {0, 100, 1, 25}, {0, 4, 1, 1}, {0, 0, 0, 0},   /* Mood (Natural), Activity, Instrument,
+    {0, 4, 1, 0}, {0, 100, 1, 25}, {0, /* JSM 4*/ FM_NPATCH-1, 1, 1}, {0, 0, 0, 0},   /* Mood (Natural), Activity, Instrument,
                                                                               * Space */
     {0, 100, 1, 80}, {0, 100, 1, 15}, {0, 100, 1, 30}, {0, 100, 1, 30},       /* Volume: Notes, Drone, Air, Water */
     {0, 3, 1, FM_AIR_BREEZE_SYNTH}, {0, FM_WATER_RAIN, 1, FM_WATER_BROOK}, {0, 100, 1, 40}, {0, 100, 1, 0},   /*
@@ -2454,7 +2455,7 @@ SC_SMALL static void sk_knob(int i, int32_t e)
     case SKK_ECHO: cd_echo_amount((float)sk.kv[SKK_ECHO] * 0.01f); break;
     case SKK_WATER: fm_bed_style(FM_BED_STREAM, sk.kv[SKK_WATER]); break;
     case SKK_AIR: fm_bed_style(FM_BED_WIND, sk.kv[SKK_AIR]); break;
-    case SKK_TONE: fm_part_patch(1, SK_TONE_SLOT[sk.kv[SKK_TONE]]); break;
+    case SKK_TONE: fm_part_patch(1,  sk.kv[SKK_TONE] % FM_NPATCH /*SK_TONE_SLOT[sk.kv[SKK_TONE]]*/); break;
     case SKK_GUSTS: fm_part_patch(3, sk.kv[SKK_GUSTS] ? FM_P_HARP : ZN_FURIN); break;
     case SKK_NOTES: case SKK_DRONE: case SKK_WIND: case SKK_STREAM: sk_mix(); break;
     default: break;
@@ -2473,7 +2474,7 @@ SC_SMALL static void sk_knob_text(int i, char *name, char *val)
     }
     copy_str(name, N[i], 11);
     switch (i) {
-    case SKK_TONE: copy_str(val, SK_TONE_NAME[sk.kv[SKK_TONE]], 11); break;
+    case SKK_TONE: copy_str(val, FM_PATCH_NAME[sk.kv[SKK_TONE] % FM_NPATCH] /*JSM SK_TONE_NAME[sk.kv[SKK_TONE]]*/, 11); break;
     case SKK_WATER: copy_str(val, SC_WATER_NAME[sk.kv[SKK_WATER] % FM_NWATER], 11); break;
     case SKK_AIR: copy_str(val, AIR[sk.kv[SKK_AIR] & 3], 11); break;
     case SKK_GUSTS: copy_str(val, sk.kv[SKK_GUSTS] ? "Harp" : "Chime", 11); break;

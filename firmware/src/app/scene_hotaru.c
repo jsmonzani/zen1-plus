@@ -24,6 +24,7 @@
  * shakuhachi; the breeze rises slowly.
  *
  * The world is 240 x 240; drawing scales by r8_fb.w / 240 for pixel art. Every loop has a fixed bound. */
+#include "dsp/fumi_patches.h" // JSM 
 #define HT_MAXF 14
 #define HT_NREED 18
 #define HT_NQ 16
@@ -61,7 +62,7 @@ enum { HT_SKY = 0, HT_STAR = 64, HT_HALO = 68, HT_MOON = 72, HT_HILL = 76, HT_GR
 enum { HK_MOOD, HK_ACT, HK_TONE, HK_SPACE, HK_NOTES, HK_DRONE, HK_AIR, HK_FROGS, HK_AIRIS, HK_WATERIS, HK_ECHO, HK_DEPTH,
        HK_OWL, HK_WEATHER, HK_MELODY, HK_ARC };
 static const int16_t HT_KNOB[SC_NKNOB][4] = {   /* lo, hi, step, default; SPACE is the reverb (P_REVERB) */
-    {0, 4, 1, 0}, {0, 100, 1, 30}, {0, HT_NTONE - 1, 1, 0}, {0, 0, 0, 0},   /* Mood (Natural), Activity,
+    {0, 4, 1, 0}, {0, 100, 1, 30}, {0, /*JSM HT_NTONE*/ FM_NPATCH  - 1, 1, 0}, {0, 0, 0, 0},   /* Mood (Natural), Activity,
                                                                               * Instrument (Bell), Space */
     {0, 100, 1, 50}, {0, 100, 1, 30}, {0, 100, 1, 20}, {0, 100, 1, 30},       /* Volume: levels set by ear */
     {0, 3, 1, FM_AIR_INSECTS}, {0, FM_WATER_RAIN + 1, 1, 0}, {0, 100, 1, 40}, {0, 100, 1, 0},   /* Air Type,
@@ -1448,7 +1449,7 @@ SC_SMALL static void ht_enter(uint32_t seed, int16_t *kv)
         cd_tune(HT_MOOD_SCALE[b], HT_MOOD_KEY[b]);
     }
     cd_range(HT_KLO, HT_KN);
-    fm_part_patch(1, HT_TONE_SLOT[kv[HK_TONE] % HT_NTONE]);
+    fm_part_patch(1, HT_TONE_SLOT[kv[HK_TONE] % FM_NPATCH/*JSM HT_NTONE*/]);
     fm_part_patch(2, ZN_SOFT_PAD);                    /* the drone */
     fm_part_patch(6, ZN_FURIN);                       /* a shooting star */
     fm_part_release(1, 2600);
@@ -1939,7 +1940,7 @@ SC_SMALL static void ht_knob(int i, int32_t e)
         sc_knob_turn(&ht.kv[i], e, HT_KNOB[i][0], HT_KNOB[i][1], HT_KNOB[i][2]);
     switch (i) {
     case HK_ACT: cd_activity((float)ht.kv[HK_ACT] * 0.01f); break;
-    case HK_TONE: fm_part_patch(1, HT_TONE_SLOT[ht.kv[HK_TONE] % HT_NTONE]); break;
+    case HK_TONE: fm_part_patch(1, ht.kv[HK_TONE] % FM_NPATCH /*JSM HT_TONE_SLOT[ht.kv[HK_TONE] % HT_NTONE]*/); break;
     case HK_ECHO: cd_echo_amount((float)ht.kv[HK_ECHO] * 0.01f + 0.3f * (1.0f - ht.mn.light)); break;
     case HK_WATERIS: ht_water(); break;
     case HK_AIRIS: fm_bed_style(FM_BED_WIND, ht.kv[HK_AIRIS]); ht.insects_sent = -1; break;
@@ -1963,7 +1964,7 @@ SC_SMALL static void ht_knob_text(int i, char *name, char *val)
     switch (i) {
     case HK_MOOD: copy_str(val, HT_MOOD_NAME[sc_mood_base(ht.kv[HK_MOOD], HT_NMOOD)], 11); break;
     case HK_WEATHER: copy_str(val, HT_WEATHER_NAME[ht.kv[HK_WEATHER] & 3], 11); break;
-    case HK_TONE: copy_str(val, HT_TONE_NAME[ht.kv[HK_TONE] % HT_NTONE], 11); break;
+    case HK_TONE: copy_str(val, FM_PATCH_NAME[ht.kv[HK_TONE] % FM_NPATCH]  /*JSM HT_TONE_NAME[ht.kv[HK_TONE] % HT_NTONE]*/, 11); break;
     case HK_SPACE: itoa_u((uint32_t)proj.par[P_REVERB], val); break;
     case HK_WATERIS: copy_str(val, ht.kv[HK_WATERIS] ? SC_WATER_NAME[(ht.kv[HK_WATERIS] - 1) % FM_NWATER] : "Off", 11);
         break;

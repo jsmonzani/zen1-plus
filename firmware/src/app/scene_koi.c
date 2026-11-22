@@ -18,6 +18,7 @@
  *                                                          lower ten, low to high); the top one: the knock, now
  *
  * The world is 240 x 240; drawing scales by r8_fb.w / 240 for pixel art. Every loop has a fixed bound. */
+#include "dsp/fumi_patches.h" // JSM
 #define KP_CX 120.0f
 #define KP_CY 124.0f
 #define KP_R 98.0f                          /* the pond's radius as the notes know it (its rings); the water's own edge
@@ -96,7 +97,7 @@ static const struct {
 enum { KK_MOOD, KK_ACT, KK_TONE, KK_SPACE, KK_NOTES, KK_DRONE, KK_AIR, KK_WATER, KK_AIRIS, KK_WATERIS, KK_ECHO, KK_DEPTH,
        KK_KOI, KK_KNOCK, KK_MELODY, KK_ARC };
 static const int16_t KP_KNOB[SC_NKNOB][4] = {   /* lo, hi, step, default; SPACE is the reverb (P_REVERB) */
-    {0, 4, 1, 0}, {0, 100, 1, 30}, {0, KP_NTONE - 1, 1, 1}, {0, 0, 0, 0},   /* Mood (Natural), Activity,
+    {0, 4, 1, 0}, {0, 100, 1, 30}, {0, /*JSM KP_NTONE*/ FM_NPATCH - 1, 1, 1}, {0, 0, 0, 0},   /* Mood (Natural), Activity,
                                                                               * Instrument (Mallet), Space */
     {0, 100, 1, 70}, {0, 100, 1, 15}, {0, 100, 1, 30}, {0, 100, 1, 30},   /* Volume: mix set by ear */
     {0, 3, 1, FM_AIR_INSECTS}, {0, KP_NWATER - 1, 1, 0}, {0, 100, 1, 40}, {0, 100, 1, 0},   /* Air Type
@@ -1728,7 +1729,7 @@ SC_SMALL static void kp_enter(uint32_t seed, int16_t *kv)
         cd_tune(KP_MOOD_SCALE[b], KP_MOOD_KEY[b]);
     }
     cd_range(KP_KLO, KP_KN);
-    fm_part_patch(1, KP_TONE_SLOT[kv[KK_TONE] % KP_NTONE]);
+    fm_part_patch(1, KP_TONE_SLOT[kv[KK_TONE] % FM_NPATCH /*KP_NTONE*/]); // JSM
     fm_part_patch(2, ZN_DEEP_PAD);                    /* the drone: deeper than Sakura's, as a pond is */
     fm_part_patch(3, ZN_DROP);                        /* a frog's plop (the knock is a recording now) */
     fm_part_patch(4, ZN_RIN);                         /* a singing bowl: rising, pebbles, passing, memories */
@@ -2472,7 +2473,7 @@ SC_SMALL static void kp_knob(int i, int32_t e)
         sc_knob_turn(&kp.kv[i], e, KP_KNOB[i][0], KP_KNOB[i][1], KP_KNOB[i][2]);
     switch (i) {
     case KK_ACT: cd_activity((float)kp.kv[KK_ACT] * 0.01f); break;
-    case KK_TONE: fm_part_patch(1, KP_TONE_SLOT[kp.kv[KK_TONE] % KP_NTONE]); break;
+    case KK_TONE: fm_part_patch(1,  kp.kv[KK_TONE] % FM_NPATCH/*JSM KP_TONE_SLOT[kp.kv[KK_TONE] % KP_NTONE]*/); break;
     case KK_ECHO: cd_echo_amount((float)kp.kv[KK_ECHO] * 0.01f); break;
     case KK_WATERIS: fm_bed_style(FM_BED_STREAM, KP_WATER[kp.kv[KK_WATERIS] % KP_NWATER]); break;
     case KK_AIRIS: fm_bed_style(FM_BED_WIND, kp.kv[KK_AIRIS]); break;
@@ -2495,7 +2496,7 @@ SC_SMALL static void kp_knob_text(int i, char *name, char *val)
     }
     copy_str(name, N[i], 11);
     switch (i) {
-    case KK_TONE: copy_str(val, KP_TONE_NAME[kp.kv[KK_TONE] % KP_NTONE], 11); break;
+    case KK_TONE: copy_str(val, FM_PATCH_NAME[kp.kv[KK_TONE] % FM_NPATCH] /*JSM KP_TONE_NAME[kp.kv[KK_TONE] % KP_NTONE]*/, 11); break;
     case KK_SPACE: itoa_u((uint32_t)proj.par[P_REVERB], val); break;
     case KK_MOOD: copy_str(val, KP_MOOD_NAME[sc_mood_base(kp.kv[KK_MOOD], KP_NMOOD)], 11); break;
     case KK_MELODY: copy_str(val, kp.kv[KK_MELODY] ? "Loops" : "Free", 11); break;
