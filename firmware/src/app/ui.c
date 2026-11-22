@@ -392,8 +392,8 @@ static void input(void)
 #define HDR_H 28
 #define MAIN_Y 28
 #define MAIN_H 144
-#define KNB_Y 172
-#define KNB_H 68
+#define KNB_Y 92 /*JSM 172*/
+#define KNB_H 148 /*JSM 68*/
 
 static uint32_t hash(uint32_t h, uint32_t v) { return (h ^ v) * 16777619u; }
 
@@ -632,9 +632,9 @@ static void draw_main(void)
         int32_t jw = *ja ? text_w(&FONT_JPL, ja) : 0, room = 240 - 24 - (jw ? jw + 10 : 0);
         const felucca_font_t *f = l_has(name) && text_w(&FONT_L, name) <= room ? &FONT_L
                                 : text_w(&FONT_M, name) <= room ? &FONT_M : &FONT_B;
-        cv_text(12, 64 - f->h / 2, f, name, fm_patch_custom ? K_KOTO : K_TEXT);
+        cv_text(12, 64 - 16 /*JSM*/ - f->h / 2, f, name, fm_patch_custom ? K_KOTO : K_TEXT);
         if (jw)
-            cv_text4(240 - 12 - jw, 64 - FONT_JPL.h / 2, &FONT_JPL, ja, K_TEXT);
+            cv_text4(240 - 12 - jw, 64 - 16 /*JSM*/ - FONT_JPL.h / 2, &FONT_JPL, ja, K_TEXT);
     }
     draw_keys(98, 22);
     for (i = 0; i < FM_NWHITE; i++)              /* the degree under each key, the tonics' row marked */
@@ -642,53 +642,78 @@ static void draw_main(void)
     cv_blit(0, MAIN_Y);
 }
 
-static void draw_knobs(void)
+static void draw_knobs(void) // JSM for FuMi screen
 {
     uint32_t h = hash(2166136261u, ui.view | (uint32_t)ui.touched << 8), i;
     int now_touch = plat_ms() < ui.touch_until;
+    int32_t max_h = 240 - KNB_Y;
+    int32_t total_h = KNB_H;
+    int32_t row_h, pad_y = 4, inner_x = 8, inner_w = 224;
+
     for (i = 0; i < 4; i++)
         h = hash(h, (uint32_t)proj.par[VIEW_KNOB[ui.view][i]]);
     h = hash(h, (uint32_t)now_touch);
     if (h == ui.sig[2])
         return;
     ui.sig[2] = h;
-    cv_begin(240, KNB_H, K_BG);
-    cv_round(4, 2, 232, KNB_H - 6, 6, K_PANEL);
+/*
+    if (total_h < 180)
+        total_h = max_h > 180 ? max_h : 240;
+    if (total_h > max_h && max_h > 0)
+        total_h = max_h;
+*/
+    row_h = (total_h - pad_y * 2) / 4;
+
+    cv_begin(240, total_h, K_BG);
+    cv_round(4, pad_y, 232, total_h - pad_y * 2, 6, K_PANEL);
+
     for (i = 0; i < 4; i++) {
         int p = VIEW_KNOB[ui.view][i], lo, hi, v;
         const fm_param_t *pi;
-        int32_t x = (int32_t)i * 60, cx = x + 30, bw;
+        int32_t ry = pad_y + (int32_t)i * row_h;
+        int32_t ty = ry ;
+        int32_t bar_y = ry + row_h - 11;
+        int32_t bw, lw, vw;
         int hot = now_touch && ui.touched == (int)i;
         char t[16];
+
         if (p == K_NONE)
             continue;
+
         pi = fm_param_info(p);
         lo = pi->lo;
         hi = pi->hi;
         v = proj.par[p];
-        if (i)
-            cv_rect(x, 14, 1, KNB_H - 30, K_LINE);
-        text_c(cx, 6, &FONT_XS, pi->name, hot ? K_TEXT : K_DIM);
         fm_param_text(p, v, t);
-        {
-            const char *q = t;
-            int lower = 0;
-            for (; *q; q++)
-                lower |= *q >= 'a' && *q <= 'z';
-            if (lower || text_w(&FONT_M, t) > 56)
-                text_c(cx, 26, &FONT_B, t, hot ? K_KOTO : K_TEXT);
-            else
-                text_c(cx, 22, &FONT_M, t, hot ? K_KOTO : K_TEXT);
-        }
-        bw = hi > lo ? (int32_t)(44 * (v - lo) / (hi - lo)) : 0;
-        cv_round(cx - 22, 50, 44, 6, 3, K_LINE);
+
+        /*if (i)
+            cv_rect(inner_x, ry, inner_w, 1, K_LINE);
+        */
+        /* Label à gauche, valeur à droite en FONT_M via text_c + text_w */
+        lw = text_w(&FONT_M, pi->name);
+        vw = text_w(&FONT_M, t);
+        text_c(inner_x + lw / 2, ty, &FONT_M, pi->name, hot ? K_KOTO : K_TEXT);
+        text_c(240 - inner_x - vw / 2, ty, &FONT_M, t, hot ? K_KOTO : K_TEXT);
+
+        /* Barre de progression sur la largeur intérieure */
+        bw = hi > lo ? (int32_t)(inner_w * (v - lo) / (hi - lo)) : 0;
+        cv_round(inner_x, bar_y, inner_w, 6, 3, K_LINE);
         if (lo < 0) {
-            int32_t m = cx - 22 + 44 * (0 - lo) / (hi - lo), e = cx - 22 + bw;
-            cv_round(e < m ? e : m, 50, (e < m ? m - e : e - m) + 6, 6, 3, hot ? K_KOTO : K_TONIC);
+            int32_t m = inner_x + inner_w * (0 - lo) / (hi - lo);
+            int32_t e = inner_x + bw;
+            int32_t bx = e < m ? e : m;
+            int32_t bww = (e < m ? m - e : e - m) + 6;
+            if (bww > inner_w)
+                bww = inner_w;
+            cv_round(bx, bar_y, bww, 6, 3, hot ? K_KOTO : K_TONIC);
         } else if (bw) {
-            cv_round(cx - 22, 50, bw < 6 ? 6 : bw, 6, 3, hot ? K_KOTO : K_TONIC);
+            int32_t bww = bw < 6 ? 6 : bw;
+            if (bww > inner_w)
+                bww = inner_w;
+            cv_round(inner_x, bar_y, bww, 6, 3, hot ? K_KOTO : K_TONIC);
         }
     }
+
     cv_blit(0, KNB_Y);
 }
 
