@@ -646,7 +646,6 @@ static void draw_knobs(void) // JSM for FuMi screen
 {
     uint32_t h = hash(2166136261u, ui.view | (uint32_t)ui.touched << 8), i;
     int now_touch = plat_ms() < ui.touch_until;
-    int32_t max_h = 240 - KNB_Y;
     int32_t total_h = KNB_H;
     int32_t row_h, pad_y = 4, inner_x = 8, inner_w = 224;
 
@@ -656,12 +655,7 @@ static void draw_knobs(void) // JSM for FuMi screen
     if (h == ui.sig[2])
         return;
     ui.sig[2] = h;
-/*
-    if (total_h < 180)
-        total_h = max_h > 180 ? max_h : 240;
-    if (total_h > max_h && max_h > 0)
-        total_h = max_h;
-*/
+
     row_h = (total_h - pad_y * 2) / 4;
 
     cv_begin(240, total_h, K_BG);
