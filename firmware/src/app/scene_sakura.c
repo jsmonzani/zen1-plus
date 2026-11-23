@@ -2464,7 +2464,7 @@ SC_SMALL static void sk_knob(int i, int32_t e)
 
 SC_SMALL static void sk_knob_text(int i, char *name, char *val)
 {
-    static const char *const N[SC_NUSED] = {"Mood", "Activity", "Instrument", "Space", "Notes", "Drone", "Air", "Water",
+    static const char *const N[SC_NUSED] = {"Mood", "Activity", "Instru", "Space", "Notes", "Drone", "Air", "Water",
                                             "Air Type", "Water Type", "Echo", "Warmth", "Clusters", "Gust Sound",
                                             "Phrases", "Tide"};
     static const char *const AIR[4] = {"Soft", "Breeze", "Breeze", "Insects"};

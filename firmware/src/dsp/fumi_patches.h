@@ -3,9 +3,8 @@
 #include <stdint.h>
 #define FM_NPATCH 25
 static const char *const FM_PATCH_NAME[FM_NPATCH] = {"Koto", "Koto II", "Sho", "Shakuhachi", "Dragon Flt", "Bamboo Flt", "Kokyu", "Taiko", "Hyoshigi", "Mokugyo", "Koto Pluck", "Koto Ring", "Koto Warm", "Harp",
-"Fairytale", "ProJS","EP Flute","Soft swell", "Drop", "Mallet", "Bell", "Rin", "Bamboo", "Furin", "Strings"};
-static const char *const FM_PATCH_JA[FM_NPATCH] = {"琴", "箏", "笙", "尺八", "龍笛", "篠笛", "胡弓", "太鼓", "拍子木", "木魚", "爪音", "響", "名残", "箜篌",
-"Fairytale", "ProJS","EP Flute","Soft swell", "Drop", "Mallet", "Bell", "Rin", "Bamboo", "Furin", "Strings"};
+"Fairytale", "Prophet","EPFlute","Soft swell", "Drop", "Mallet", "Bell", "Rin", "Bamboo", "Furin", "Strings"};
+// static const char *const FM_PATCH_JA[FM_NPATCH] = {"琴", "箏", "笙", "尺八", "龍笛", "篠笛", "胡弓", "太鼓", "拍子木", "木魚", "爪音", "響", "名残", "箜篌",};
 static const uint8_t FM_PATCH[FM_NPATCH][128] = {
     { /* Koto */
          82,  82,  37,  48,  99,  81,   0,   0,  39,   0,  10,   0,  61,   4,   0,   6,

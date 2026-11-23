@@ -391,7 +391,7 @@ static void input(void)
 /* ------------------------------------------------------------- screen --- */
 #define HDR_H 28
 #define MAIN_Y 28
-#define MAIN_H 144
+#define MAIN_H 70 /*JSM 144*/
 #define KNB_Y 92 /*JSM 172*/
 #define KNB_H 148 /*JSM 68*/
 
@@ -628,17 +628,18 @@ static void draw_main(void)
     }
     {   /* the instrument, large: its name at the left in the biggest face that fits, its kanji at the right
          * (Suiko-style), both centered on the band y 38..90; a patch sent from outside has no kanji */
-        const char *name = (const char *)fm_patch_label, *ja = fm_patch_custom ? "" : FM_PATCH_JA_LCD[proj.par[P_VOICE]];
-        int32_t jw = *ja ? text_w(&FONT_JPL, ja) : 0, room = 240 - 24 - (jw ? jw + 10 : 0);
+        // JSM remove kanji
+        const char *name = (const char *)fm_patch_label; //, *ja = fm_patch_custom ? "" : FM_PATCH_JA_LCD[proj.par[P_VOICE]];
+        int32_t jw = 0/* *ja ? text_w(&FONT_JPL, ja) : 0*/, room = 240 - 24 - (jw ? jw + 10 : 0);
         const felucca_font_t *f = l_has(name) && text_w(&FONT_L, name) <= room ? &FONT_L
                                 : text_w(&FONT_M, name) <= room ? &FONT_M : &FONT_B;
         cv_text(12, 64 - 16 /*JSM*/ - f->h / 2, f, name, fm_patch_custom ? K_KOTO : K_TEXT);
-        if (jw)
-            cv_text4(240 - 12 - jw, 64 - 16 /*JSM*/ - FONT_JPL.h / 2, &FONT_JPL, ja, K_TEXT);
+        //if (jw)
+        //    cv_text4(240 - 12 - jw, 64 - 16 /*JSM*/ - FONT_JPL.h / 2, &FONT_JPL, ja, K_TEXT);
     }
-    draw_keys(98, 22);
-    for (i = 0; i < FM_NWHITE; i++)              /* the degree under each key, the tonics' row marked */
-        text_c(12 + i * 14, 124, &FONT_XS, DEG_NAME[i % 5], (i % 5) ? K_DIM : K_TEXT);
+    //draw_keys(98, 22);
+    //for (i = 0; i < FM_NWHITE; i++)              /* the degree under each key, the tonics' row marked */
+    //    text_c(12 + i * 14, 124, &FONT_XS, DEG_NAME[i % 5], (i % 5) ? K_DIM : K_TEXT);
     cv_blit(0, MAIN_Y);
 }
 
@@ -659,7 +660,7 @@ static void draw_knobs(void) // JSM for FuMi screen
     row_h = (total_h - pad_y * 2) / 4;
 
     cv_begin(240, total_h, K_BG);
-    cv_round(4, pad_y, 232, total_h - pad_y * 2, 6, K_PANEL);
+    cv_round(4, pad_y, 232, total_h - pad_y * 2, 6, K_BG);
 
     for (i = 0; i < 4; i++) {
         int p = VIEW_KNOB[ui.view][i], lo, hi, v;
